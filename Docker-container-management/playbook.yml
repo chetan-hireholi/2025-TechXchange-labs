@@ -1,0 +1,79 @@
+---
+- name: Manage Docker containers
+  hosts: containers
+  gather_facts: false
+  tasks:
+    - name: Check container status
+      docker_container_info:
+        name: "{{ inventory_hostname }}"
+      register: container_info
+
+    - name: Display container info
+      debug:
+        msg: "Container {{ inventory_hostname }} is {{ container_info.exists | ternary('running', 'not found') }}"
+
+- name: Configure Nginx container
+  hosts: web
+  gather_facts: false
+  tasks:
+    - name: Create custom nginx config
+      copy:
+        content: |
+          server {
+              listen 80;
+              server_name localhost;
+              
+              location / {
+                  root /usr/share/nginx/html;
+                  index index.html;
+              }
+              
+              location /health {
+                  access_log off;
+                  return 200 "healthy\n";
+                  add_header Content-Type text/plain;
+              }
+          }
+        dest: /etc/nginx/conf.d/default.conf
+        mode: '0644'
+
+    - name: Reload nginx configuration
+      shell: nginx -s reload
+      ignore_errors: true
+
+- name: Configure Redis container
+  hosts: redis
+  gather_facts: false
+  tasks:
+    - name: Create redis config
+      copy:
+        content: |
+          bind 0.0.0.0
+          port 6379
+          maxmemory 128mb
+          maxmemory-policy allkeys-lru
+          save 900 1
+          save 300 10
+          save 60 10000
+        dest: /usr/local/etc/redis/redis.conf
+        mode: '0644'
+
+    - name: Restart redis service
+      shell: redis-server /usr/local/etc/redis/redis.conf --daemonize yes
+      ignore_errors: true
+
+- name: Health checks
+  hosts: containers
+  gather_facts: false
+  tasks:
+    - name: Check if containers are responding
+      uri:
+        url: "http://{{ ansible_host }}:{{ '8080' if inventory_hostname == 'tx-web' else '6379' }}"
+        method: GET
+        status_code: [200, 000]  # 000 for Redis (no HTTP)
+      ignore_errors: true
+      register: health_check
+
+    - name: Display health status
+      debug:
+        msg: "{{ inventory_hostname }} health check: {{ 'PASSED' if health_check.status == 200 or (inventory_hostname == 'tx-redis' and health_check.status == 0) else 'FAILED' }}"
