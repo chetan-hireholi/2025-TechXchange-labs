@@ -5,8 +5,13 @@ resource "docker_network" "tx_net" {
 }
 
 resource "docker_image" "nginx" {
-  name         = "nginx:stable"
+  name         = "tx-nginx:latest"
   keep_locally = true
+  
+  build {
+    context = "."
+    dockerfile = "Dockerfile.nginx"
+  }
 }
 
 resource "docker_container" "web" {
@@ -21,11 +26,21 @@ resource "docker_container" "web" {
   networks_advanced {
     name = docker_network.tx_net.name
   }
+
+  volumes {
+    host_path      = "/var/run/docker.sock"
+    container_path = "/var/run/docker.sock"
+  }
 }
 
 resource "docker_image" "redis" {
-  name         = "redis:7"
+  name         = "tx-redis:latest"
   keep_locally = true
+  
+  build {
+    context = "."
+    dockerfile = "Dockerfile.redis"
+  }
 }
 
 resource "docker_container" "cache" {
@@ -39,6 +54,11 @@ resource "docker_container" "cache" {
 
   networks_advanced {
     name = docker_network.tx_net.name
+  }
+
+  volumes {
+    host_path      = "/var/run/docker.sock"
+    container_path = "/var/run/docker.sock"
   }
 }
 
