@@ -1,4 +1,6 @@
-provider "docker" {}
+provider "docker" {
+  # host = "tcp://localhost:2327"
+}
 
 resource "docker_network" "tx_net" {
   name = "tx-net"
@@ -9,7 +11,7 @@ resource "docker_image" "nginx" {
   keep_locally = true
   
   build {
-    context = "."
+    context = "./nginx-build"
     dockerfile = "Dockerfile.nginx"
   }
 }
@@ -38,7 +40,7 @@ resource "docker_image" "redis" {
   keep_locally = true
   
   build {
-    context = "."
+    context = "./redis-build"
     dockerfile = "Dockerfile.redis"
   }
 }
