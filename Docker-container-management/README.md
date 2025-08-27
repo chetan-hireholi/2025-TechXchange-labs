@@ -68,7 +68,7 @@ redis-cli -h 127.0.0.1 -p 6379 PING
 
 5. **Run Ansible playbook**:
 ```bash
-ansible-playbook playbook.yml
+ansible-playbook -i inventory.ini playbook.yml
 ```
 
 6. **Test enhanced services**:

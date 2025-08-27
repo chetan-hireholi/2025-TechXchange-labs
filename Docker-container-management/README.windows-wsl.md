@@ -105,7 +105,7 @@ docker ps  # should list tx-web and tx-redis
 
 4) Run the playbook:
 ```bash
-ansible-playbook playbook.yml
+ansible-playbook -i inventory.ini playbook.yml
 ```
 
 - Inventory: `inventory.ini` groups `web` and `redis`
